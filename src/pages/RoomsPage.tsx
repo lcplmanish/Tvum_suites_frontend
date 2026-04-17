@@ -39,7 +39,7 @@ const RoomsPage = () => {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-serif font-semibold text-foreground">{room.name}</h3>
                 <div className="flex items-center gap-2">
-                  <span className="text-lg font-bold text-primary">₹{room.price}<span className="text-xs text-muted-foreground font-normal">/night</span></span>
+                  {/* <span className="text-lg font-bold text-primary">₹{room.price}<span className="text-xs text-muted-foreground font-normal">/night</span></span> */}
                   {userRole === 'owner' && (
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditRoom(room)}>
                       <Pencil className="w-4 h-4" />

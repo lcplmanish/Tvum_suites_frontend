@@ -244,13 +244,13 @@ const BookingPage = () => {
                 </div>
                 <div className="p-3">
                   <h3 className="font-semibold text-foreground text-sm">{room.name}</h3>
-                  <div className="flex items-center gap-1 mt-1 flex-wrap">
-                    {amenities.slice(0, 4).map(a => (
-                      <a.icon key={a.label} className="w-3.5 h-3.5 text-muted-foreground" />
-                    ))}
-                    <span className="text-xs text-muted-foreground ml-1">+{amenities.length - 4}</span>
-                  </div>
-                  <p className="text-primary font-bold mt-2">₹{room.price}<span className="text-xs text-muted-foreground font-normal"> /night</span></p>
+                  {/* <div className="flex items-center gap-1 mt-1 flex-wrap"> */}
+                    {/* {amenities.slice(0, 4).map(a => ( */}
+                      {/* <a.icon key={a.label} className="w-3.5 h-3.5 text-muted-foreground" /> */}
+                    {/* ))} */}
+                    {/* <span className="text-xs text-muted-foreground ml-1">+{amenities.length - 4}</span> */}
+                  {/* </div> */}
+                  {/* <p className="text-primary font-bold mt-2">₹{room.price}<span className="text-xs text-muted-foreground font-normal"> /night</span></p> */}
                 </div>
               </div>
             );
