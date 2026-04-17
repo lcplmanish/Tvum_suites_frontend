@@ -3,6 +3,7 @@ import { NavLink as RouterNavLink, useLocation } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
 import { canAccess } from '@/lib/permissions';
 import type { AppRole, Feature } from '@/lib/permissions';
+
 import {
   Sidebar,
   SidebarContent,
@@ -23,11 +24,11 @@ import {
   Package,
   Users,
   LogOut,
-  Hotel,
   Contact,
   Shirt,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import logoImage from '@/assets/image.png';
 
 const navItems = [
   { title: 'New Booking', url: '/', icon: CalendarPlus, feature: 'create_booking' as Feature },
@@ -49,8 +50,8 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full warm-gradient flex items-center justify-center flex-shrink-0">
-            <Hotel className="w-5 h-5" style={{ color: 'hsl(36, 33%, 97%)' }} />
+          <div className="flex items-center justify-center flex-shrink-0">
+            <img src={logoImage} alt="Tvum Suites" className="w-10 h-10" />
           </div>
           {!collapsed && (
             <div>

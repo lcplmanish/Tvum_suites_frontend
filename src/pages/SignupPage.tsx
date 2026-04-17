@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Hotel, Lock, Mail, User, Shield } from 'lucide-react';
 import hotelBg from '@/assets/hotel-bg.jpg';
-
+import logoImage from '@/assets/image.png';
 interface SignupPageProps {
   onSwitchToLogin: () => void;
 }
@@ -52,9 +52,9 @@ const SignupPage = ({ onSwitchToLogin }: SignupPageProps) => {
       <div className="relative z-10 w-full max-w-md mx-4 fade-in">
         <div className="glass-card-dark p-8 md:p-10 rounded-2xl shadow-2xl">
           <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 rounded-full warm-gradient flex items-center justify-center mb-4 shadow-lg">
-              <Hotel className="w-8 h-8" style={{ color: 'hsl(36, 33%, 97%)' }} />
-            </div>
+             <div className="flex items-center justify-center flex-shrink-0">
+            <img src={logoImage} alt="Tvum Suites" className="w-10 h-10" />
+          </div>
             <h1 className="text-2xl font-serif" style={{ color: 'hsl(36, 33%, 97%)' }}>Create Account</h1>
             <p className="text-sm mt-1" style={{ color: 'hsl(36, 20%, 70%)' }}>Join tvum Suites</p>
           </div>
