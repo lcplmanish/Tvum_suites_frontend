@@ -28,7 +28,7 @@ const permissions: Record<Feature, AppRole[]> = {
   create_booking:  ['owner', 'admin'],
   edit_booking:    ['owner', 'admin'],
   delete_booking:  ['owner', 'admin'],
-  view_food:       ['owner', 'admin', 'supervisor', 'staff'],
+  view_food:       ['owner', 'admin', 'supervisor', 'accountant', 'staff'],
   edit_food_prices:['owner', 'admin'],
   view_guests:     ['owner', 'admin'],
   edit_guest:      ['owner', 'admin'],
@@ -46,7 +46,7 @@ const permissions: Record<Feature, AppRole[]> = {
 const pageAccess: Record<PageRoute, AppRole[]> = {
   '/': ['owner', 'admin'],
   '/dashboard': ['owner', 'admin', 'accountant'],
-  '/food': ['owner', 'admin', 'supervisor', 'staff'],
+  '/food': ['owner', 'admin', 'supervisor', 'accountant', 'staff'],
   '/guests': ['owner', 'admin'],
   '/rooms': ['owner', 'admin', 'supervisor'],
   '/inventory': ['owner', 'admin', 'supervisor', 'staff'],
