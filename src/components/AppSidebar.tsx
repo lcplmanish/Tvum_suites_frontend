@@ -1,0 +1,106 @@
+import React from 'react';
+import { NavLink as RouterNavLink, useLocation } from 'react-router-dom';
+import { useApp } from '@/context/AppContext';
+import { canAccess } from '@/lib/permissions';
+import type { AppRole, Feature } from '@/lib/permissions';
+
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarHeader,
+  SidebarFooter,
+  useSidebar,
+} from '@/components/ui/sidebar';
+import {
+  CalendarPlus,
+  LayoutDashboard,
+  BedDouble,
+  Package,
+  Users,
+  LogOut,
+  Contact,
+  Shirt,
+  UtensilsCrossed,
+  MessageCircle,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import logoImage from '@/assets/image.png';
+
+const navItems = [
+  { title: 'New Booking', url: '/', icon: CalendarPlus, feature: 'create_booking' as Feature },
+  { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard, feature: 'view_dashboard' as Feature },
+  { title: 'Food', url: '/food', icon: UtensilsCrossed, feature: 'view_food' as Feature },
+  { title: 'Guest Info', url: '/guests', icon: Contact, feature: 'view_guests' as Feature },
+  { title: 'Rooms', url: '/rooms', icon: BedDouble, feature: 'view_rooms' as Feature },
+  { title: 'Inventory', url: '/inventory', icon: Package, feature: 'view_inventory' as Feature },
+  { title: 'Laundry', url: '/laundry', icon: Shirt, feature: 'view_laundry' as Feature },
+  { title: 'Staff', url: '/staff', icon: Users, feature: 'view_staff' as Feature },
+  { title: 'AI Assistant', url: '/ai', icon: MessageCircle, feature: 'view_staff' as Feature }, // Using view_staff as it's available to all
+];
+
+export function AppSidebar() {
+  const { state } = useSidebar();
+  const collapsed = state === 'collapsed';
+  const location = useLocation();
+  const { logout, userRole } = useApp();
+
+  return (
+    <Sidebar collapsible="icon">
+      <SidebarHeader className="p-4">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center flex-shrink-0">
+            <img src={logoImage} alt="Tvum Suites" className="w-10 h-10" />
+          </div>
+          {!collapsed && (
+            <div>
+              <h2 className="font-serif text-lg text-sidebar-foreground">Tvum Suites</h2>
+              <p className="text-xs text-sidebar-foreground/60 capitalize">{userRole}</p>
+            </div>
+          )}
+        </div>
+      </SidebarHeader>
+
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-sidebar-foreground/40 text-xs uppercase tracking-wider">
+            {!collapsed && 'Navigation'}
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {navItems.filter(item => canAccess(userRole, item.feature)).map((item) => {
+                const isActive = location.pathname === item.url;
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={isActive}>
+                      <RouterNavLink to={item.url} className="flex items-center gap-3">
+                        <item.icon className="w-5 h-5" />
+                        {!collapsed && <span>{item.title}</span>}
+                      </RouterNavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      <SidebarFooter className="p-4">
+        <Button
+          variant="ghost"
+          onClick={logout}
+          className="w-full justify-start text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+        >
+          <LogOut className="w-5 h-5 mr-2" />
+          {!collapsed && 'Sign Out'}
+        </Button>
+      </SidebarFooter>
+    </Sidebar>
+  );
+}
