@@ -25,7 +25,7 @@ export type PageRoute = '/' | '/dashboard' | '/food' | '/guests' | '/rooms' | '/
 const permissions: Record<Feature, AppRole[]> = {
   view_dashboard:  ['owner', 'admin', 'accountant'],
   view_bookings:   ['owner', 'admin'],
-  create_booking:  ['owner', 'admin'],
+  create_booking:  ['owner', 'admin', 'supervisor'],
   edit_booking:    ['owner', 'admin'],
   delete_booking:  ['owner', 'admin'],
   view_food:       ['owner', 'admin', 'supervisor', 'accountant', 'staff'],
@@ -44,7 +44,7 @@ const permissions: Record<Feature, AppRole[]> = {
 };
 
 const pageAccess: Record<PageRoute, AppRole[]> = {
-  '/': ['owner', 'admin'],
+  '/': ['owner', 'admin', 'supervisor'],
   '/dashboard': ['owner', 'admin', 'accountant'],
   '/food': ['owner', 'admin', 'supervisor', 'accountant', 'staff'],
   '/guests': ['owner', 'admin'],
