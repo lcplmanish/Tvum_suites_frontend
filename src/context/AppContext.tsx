@@ -67,6 +67,10 @@ export interface LaundryRecord {
   pillow_covers_taken?: number;
   towels_given: number;
   towels_taken?: number;
+  hand_towels_given: number;
+  hand_towels_taken?: number;
+  kitchen_towels_given: number;
+  kitchen_towels_taken?: number;
   blankets_given: number;
   blankets_taken?: number;
   createdAt: Date;
@@ -221,6 +225,10 @@ const mapLaundryRow = (row: Database['public']['Tables']['laundry_records']['Row
   pillow_covers_taken: row.pillow_covers_taken,
   towels_given: row.towels_given,
   towels_taken: row.towels_taken,
+  hand_towels_given: row.hand_towels_given,
+  hand_towels_taken: row.hand_towels_taken,
+  kitchen_towels_given: row.kitchen_towels_given,
+  kitchen_towels_taken: row.kitchen_towels_taken,
   blankets_given: row.blankets_given,
   blankets_taken: row.blankets_taken,
   createdAt: new Date(row.created_at),
@@ -446,6 +454,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       pillow_covers_taken: record.pillow_covers_taken,
       towels_given: record.towels_given,
       towels_taken: record.towels_taken,
+      hand_towels_given: record.hand_towels_given,
+      hand_towels_taken: record.hand_towels_taken,
+      kitchen_towels_given: record.kitchen_towels_given,
+      kitchen_towels_taken: record.kitchen_towels_taken,
       blankets_given: record.blankets_given,
       blankets_taken: record.blankets_taken,
     };
@@ -472,6 +484,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       bedsheets_taken: record.bedsheets_taken,
       pillow_covers_taken: record.pillow_covers_taken,
       towels_taken: record.towels_taken,
+      hand_towels_taken: record.hand_towels_taken,
+      kitchen_towels_taken: record.kitchen_towels_taken,
       blankets_taken: record.blankets_taken,
     };
 
