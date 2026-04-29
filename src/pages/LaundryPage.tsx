@@ -356,86 +356,63 @@ const LaundryPage = () => {
         </TabsContent>
       </Tabs>
 
-      <div className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
-        <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
-          <h2 className="text-xl font-semibold text-foreground mb-4">Quick Summary</h2>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>Total Records</span>
-              <span>{laundryRecords.length}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>Pending Records</span>
-              <span>{pendingRecords.length}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>Total Bedsheets Awaited</span>
-              <span>{totalBedsheetMissing}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>Total Pillow Covers Awaited</span>
-              <span>{totalPillowMissing}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>Total Towels Awaited</span>
-              <span>{totalTowelMissing}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>Total Hand Towels Awaited</span>
-              <span>{totalHandTowelMissing}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>Total Kitchen Towels Awaited</span>
-              <span>{totalKitchenTowelMissing}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>Total Blankets Awaited</span>
-              <span>{totalBlanketMissing}</span>
-            </div>
-            {previousMissingFilled && (
-              <div className="rounded border border-green-200 bg-green-50 p-3 text-sm text-green-700">
-                Excess received quantity has filled previous missing items.
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      
 
       <div className="bg-card rounded-xl border border-border p-6 shadow-sm mt-4">
         <h2 className="text-xl font-semibold text-foreground mb-4">Month Totals</h2>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>Records This Month</span>
-            <span>{currentMonthRecords.length}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>Pending This Month</span>
-            <span>{currentMonthRecords.filter(r => !r.date_taken).length}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>Bedsheets (G/R/M)</span>
-            <span>{monthTotals.bedsheetsGiven} / {monthTotals.bedsheetsTaken} / {Math.max(0, monthTotals.bedsheetsGiven - monthTotals.bedsheetsTaken)}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>Pillow Covers (G/R/M)</span>
-            <span>{monthTotals.pillowsGiven} / {monthTotals.pillowsTaken} / {Math.max(0, monthTotals.pillowsGiven - monthTotals.pillowsTaken)}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>Towels (G/R/M)</span>
-            <span>{monthTotals.towelsGiven} / {monthTotals.towelsTaken} / {Math.max(0, monthTotals.towelsGiven - monthTotals.towelsTaken)}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>Hand Towels (G/R/M)</span>
-            <span>{monthTotals.handTowelsGiven} / {monthTotals.handTowelsTaken} / {Math.max(0, monthTotals.handTowelsGiven - monthTotals.handTowelsTaken)}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>Kitchen Towels (G/R/M)</span>
-            <span>{monthTotals.kitchenTowelsGiven} / {monthTotals.kitchenTowelsTaken} / {Math.max(0, monthTotals.kitchenTowelsGiven - monthTotals.kitchenTowelsTaken)}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>Blankets (G/R/M)</span>
-            <span>{monthTotals.blanketsGiven} / {monthTotals.blanketsTaken} / {Math.max(0, monthTotals.blanketsGiven - monthTotals.blanketsTaken)}</span>
-          </div>
+        <div className="mb-4 text-sm text-muted-foreground flex justify-between">
+          <div>Records: <span className="font-medium text-foreground">{currentMonthRecords.length}</span></div>
+          <div>Pending: <span className="font-medium text-foreground">{currentMonthRecords.filter(r => !r.date_taken).length}</span></div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-muted-foreground">
+                <th className="pb-2">Item</th>
+                <th className="pb-2 text-right">Given</th>
+                <th className="pb-2 text-right">Received</th>
+                <th className="pb-2 text-right">Awaited</th>
+              </tr>
+            </thead>
+            <tbody className="text-foreground">
+              <tr className="border-t border-border">
+                <td className="py-2">Bedsheets</td>
+                <td className="py-2 text-right">{monthTotals.bedsheetsGiven}</td>
+                <td className="py-2 text-right">{monthTotals.bedsheetsTaken}</td>
+                <td className="py-2 text-right">{Math.max(0, monthTotals.bedsheetsGiven - monthTotals.bedsheetsTaken)}</td>
+              </tr>
+              <tr className="border-t border-border">
+                <td className="py-2">Pillow Covers</td>
+                <td className="py-2 text-right">{monthTotals.pillowsGiven}</td>
+                <td className="py-2 text-right">{monthTotals.pillowsTaken}</td>
+                <td className="py-2 text-right">{Math.max(0, monthTotals.pillowsGiven - monthTotals.pillowsTaken)}</td>
+              </tr>
+              <tr className="border-t border-border">
+                <td className="py-2">Towels</td>
+                <td className="py-2 text-right">{monthTotals.towelsGiven}</td>
+                <td className="py-2 text-right">{monthTotals.towelsTaken}</td>
+                <td className="py-2 text-right">{Math.max(0, monthTotals.towelsGiven - monthTotals.towelsTaken)}</td>
+              </tr>
+              <tr className="border-t border-border">
+                <td className="py-2">Hand Towels</td>
+                <td className="py-2 text-right">{monthTotals.handTowelsGiven}</td>
+                <td className="py-2 text-right">{monthTotals.handTowelsTaken}</td>
+                <td className="py-2 text-right">{Math.max(0, monthTotals.handTowelsGiven - monthTotals.handTowelsTaken)}</td>
+              </tr>
+              <tr className="border-t border-border">
+                <td className="py-2">Kitchen Towels</td>
+                <td className="py-2 text-right">{monthTotals.kitchenTowelsGiven}</td>
+                <td className="py-2 text-right">{monthTotals.kitchenTowelsTaken}</td>
+                <td className="py-2 text-right">{Math.max(0, monthTotals.kitchenTowelsGiven - monthTotals.kitchenTowelsTaken)}</td>
+              </tr>
+              <tr className="border-t border-border">
+                <td className="py-2">Blankets</td>
+                <td className="py-2 text-right">{monthTotals.blanketsGiven}</td>
+                <td className="py-2 text-right">{monthTotals.blanketsTaken}</td>
+                <td className="py-2 text-right">{Math.max(0, monthTotals.blanketsGiven - monthTotals.blanketsTaken)}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 

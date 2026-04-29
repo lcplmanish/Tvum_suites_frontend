@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useApp, Booking } from '@/context/AppContext';
 import { format, startOfDay } from 'date-fns';
-import { Search, Eye, Pencil, Trash2, FileText, Users } from 'lucide-react';
+import { Search, Eye, Pencil, Trash2, FileText, Users, Filter } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -46,7 +46,9 @@ const GuestInfoPage = () => {
   const { bookings, rooms, deleteBooking, userRole } = useApp();
   const [search, setSearch] = useState('');
   const [roomFilter, setRoomFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [guestCountFilter, setGuestCountFilter] = useState('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewType, setPreviewType] = useState<string>('');
   const [editBooking, setEditBooking] = useState<Booking | null>(null);
@@ -55,17 +57,27 @@ const GuestInfoPage = () => {
 
   const filtered = useMemo(() => {
     return bookings.filter(b => {
-      const liveStatus = getLiveBookingStatus(b);
       const q = search.toLowerCase();
       const matchSearch = !q ||
         b.guestName.toLowerCase().includes(q) ||
         b.phone?.toLowerCase().includes(q) ||
         b.guests.some(g => g.name.toLowerCase().includes(q) || g.phone.toLowerCase().includes(q));
       const matchRoom = roomFilter === 'all' || b.roomNumber === Number(roomFilter);
-      const matchStatus = statusFilter === 'all' || liveStatus === statusFilter;
-      return matchSearch && matchRoom && matchStatus;
+      const matchGuestCount = guestCountFilter === 'all' || b.guests.length === Number(guestCountFilter);
+      const fromDate = dateFrom ? startOfDay(new Date(dateFrom)).getTime() : null;
+      const toDate = dateTo ? startOfDay(new Date(dateTo)).getTime() : null;
+      const bookingStart = startOfDay(b.checkIn).getTime();
+      const bookingEnd = startOfDay(b.checkOut).getTime();
+      const matchDates = fromDate && toDate
+        ? bookingStart >= fromDate && bookingEnd <= toDate
+        : fromDate
+          ? bookingStart >= fromDate
+          : toDate
+            ? bookingEnd <= toDate
+            : true;
+      return matchSearch && matchRoom && matchGuestCount && matchDates;
     });
-  }, [bookings, search, roomFilter, statusFilter]);
+  }, [bookings, search, roomFilter, guestCountFilter, dateFrom, dateTo]);
 
   const handleViewId = (url: string, type: string) => {
     if (type.includes('pdf')) {
@@ -92,39 +104,54 @@ const GuestInfoPage = () => {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by name or phone..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="pl-10"
-          />
+      <div className="mb-6 rounded-xl border border-border bg-card p-4 shadow-sm">
+        <div className="mb-4 flex items-center gap-2 text-sm font-medium text-foreground">
+          <Filter className="w-4 h-4 text-muted-foreground" aria-label="Filters" />
         </div>
-        <Select value={roomFilter} onValueChange={setRoomFilter}>
-          <SelectTrigger className="w-full sm:w-[140px]">
-            <SelectValue placeholder="Room" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Rooms</SelectItem>
-            {rooms.map((room) => (
-              <SelectItem key={room.number} value={String(room.number)}>{room.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-[160px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="upcoming">Upcoming</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by name or phone..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select value={roomFilter} onValueChange={setRoomFilter}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Select Room" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Rooms</SelectItem>
+              {rooms.map((room) => (
+                <SelectItem key={room.number} value={String(room.number)}>{room.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={guestCountFilter} onValueChange={setGuestCountFilter}>
+            <SelectTrigger className="w-full sm:w-[160px]">
+              <SelectValue placeholder="Guests" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Guests</SelectItem>
+              <SelectItem value="1">1 Guest</SelectItem>
+              <SelectItem value="2">2 Guests</SelectItem>
+              <SelectItem value="3">3 Guests</SelectItem>
+              <SelectItem value="4">4 Guests</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">From</p>
+              <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">To</p>
+              <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Table */}

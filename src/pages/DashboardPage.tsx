@@ -1,13 +1,14 @@
 import React, { useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
-import { eachDayOfInterval, endOfMonth, format, isSameDay, startOfDay, startOfMonth } from 'date-fns';
+import { differenceInCalendarDays, endOfMonth, format, startOfDay, startOfMonth } from 'date-fns';
 import {
-  CalendarCheck, CalendarClock, ChevronLeft, ChevronRight, Users, CheckCircle2,
-  BedDouble, PieChart as PieChartIcon, Sparkles,
+  CalendarCheck, CalendarClock, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Users, CheckCircle2,
+  BedDouble, PieChart as PieChartIcon, Sparkles, Hotel,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { getRoomLabel } from '@/lib/utils';
 import { Bar, BarChart, Cell, CartesianGrid, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const STATUS_COLORS = {
   upcoming: '#f59e0b',
@@ -15,6 +16,8 @@ const STATUS_COLORS = {
   completed: '#94a3b8',
   cancelled: '#f43f5e',
 };
+
+const BOOKING_SEGMENT_COLORS = ['#22c55e', '#16a34a', '#4ade80', '#15803d', '#65a30d', '#0f766e', '#10b981', '#84cc16'];
 
 const getLiveBookingStatus = (booking: { status: string; checkIn: Date; checkOut: Date }) => {
   if (booking.status === 'cancelled') return 'cancelled';
@@ -31,9 +34,9 @@ const getLiveBookingStatus = (booking: { status: string; checkIn: Date; checkOut
 const DashboardPage = () => {
   const { bookings, rooms } = useApp();
   const [selectedMonth, setSelectedMonth] = React.useState(() => new Date());
+  const [expandedRooms, setExpandedRooms] = React.useState<number[]>([]);
   const monthStart = startOfMonth(selectedMonth);
   const monthEnd = endOfMonth(selectedMonth);
-  const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
   const liveBookings = useMemo(
     () => bookings.map(booking => ({ ...booking, liveStatus: getLiveBookingStatus(booking) })),
@@ -48,6 +51,23 @@ const DashboardPage = () => {
   const monthlyBookingsForDisplay = [...monthlyBookings].sort(
     (a, b) => a.checkIn.getTime() - b.checkIn.getTime() || a.createdAt.getTime() - b.createdAt.getTime()
   );
+  const monthlyBookingsByRoom = rooms.map(room => {
+    const roomBookings = monthlyBookingsForDisplay.filter(booking => booking.roomNumber === room.number);
+
+    return {
+      roomNumber: room.number,
+      roomLabel: getRoomLabel(rooms, room.number),
+      bookings: roomBookings,
+    };
+  }).filter(entry => entry.bookings.length > 0);
+
+  const toggleRoom = (roomNumber: number) => {
+    setExpandedRooms(prev => (
+      prev.includes(roomNumber)
+        ? prev.filter(number => number !== roomNumber)
+        : [...prev, roomNumber]
+    ));
+  };
 
   const upcoming = liveBookings.filter(b => b.liveStatus === 'upcoming');
   const active = liveBookings.filter(b => b.liveStatus === 'active');
@@ -68,16 +88,38 @@ const DashboardPage = () => {
     { name: 'Cancelled', value: monthlyBookings.filter(booking => booking.liveStatus === 'cancelled').length, color: STATUS_COLORS.cancelled },
   ].filter(item => item.value > 0);
 
-  const monthlyTrendData = monthDays.map(day => {
-    const dayBookings = monthlyBookings.filter(booking => isSameDay(startOfDay(booking.checkIn), day));
+  const monthlyTrendData = rooms.map(room => {
+    const roomBookings = monthlyBookings.filter(booking => booking.roomNumber === room.number);
+    const bookingDetails = roomBookings.map(booking => {
+      const clippedStart = booking.checkIn > monthStart ? booking.checkIn : monthStart;
+      const clippedEnd = booking.checkOut < monthEnd ? booking.checkOut : monthEnd;
+      const daysInRange = Math.max(0, differenceInCalendarDays(startOfDay(clippedEnd), startOfDay(clippedStart)) + 1);
+
+      return {
+        id: booking.id,
+        guestName: booking.guestName,
+        checkIn: booking.checkIn,
+        checkOut: booking.checkOut,
+        guestsCount: booking.adults + booking.children + booking.infants,
+        daysInRange,
+      };
+    }).sort((a, b) => a.checkIn.getTime() - b.checkIn.getTime());
+
+    const bookingSegments = bookingDetails.reduce((acc, booking, index) => {
+      acc[`booking_${index + 1}`] = booking.daysInRange;
+      return acc;
+    }, {} as Record<string, number>);
+
     return {
-      day: format(day, 'd'),
-      Upcoming: dayBookings.filter(booking => booking.liveStatus === 'upcoming').length,
-      Active: dayBookings.filter(booking => booking.liveStatus === 'active').length,
-      Completed: dayBookings.filter(booking => booking.liveStatus === 'completed').length,
-      Cancelled: dayBookings.filter(booking => booking.liveStatus === 'cancelled').length,
+      room: getRoomLabel(rooms, room.number),
+      totalDays: bookingDetails.reduce((sum, booking) => sum + booking.daysInRange, 0),
+      bookings: bookingDetails,
+      ...bookingSegments,
     };
-  }).filter(item => item.Upcoming || item.Active || item.Completed || item.Cancelled);
+  }).filter(item => item.totalDays > 0);
+
+  const maxBookingsPerSuite = monthlyTrendData.reduce((max, suite) => Math.max(max, suite.bookings.length), 0);
+  const bookingSegmentKeys = Array.from({ length: maxBookingsPerSuite }, (_, index) => `booking_${index + 1}`);
 
   const roomStatus = rooms.map(room => {
     const liveActiveBooking = liveBookings.find(b => b.roomNumber === room.number && b.liveStatus === 'active');
@@ -109,6 +151,36 @@ const DashboardPage = () => {
   };
 
   const selectedMonthValue = format(selectedMonth, 'yyyy-MM');
+  const totalSuiteNights = monthlyTrendData.reduce((sum, suite) => sum + suite.totalDays, 0);
+  const averageSuiteNights = monthlyTrendData.length ? (totalSuiteNights / monthlyTrendData.length).toFixed(1) : '0.0';
+  const topSuiteByDays = monthlyTrendData.length
+    ? [...monthlyTrendData].sort((a, b) => b.totalDays - a.totalDays)[0]
+    : null;
+
+  const SuiteTooltip = ({ active, payload }: any) => {
+    if (!active || !payload || !payload.length) return null;
+
+    const data = payload[0]?.payload;
+    if (!data) return null;
+
+    return (
+      <div className="max-w-[320px] rounded-lg border border-border bg-card p-3 shadow-lg">
+        <p className="text-sm font-semibold text-foreground">{data.room}</p>
+        <p className="text-xs text-muted-foreground mb-2">No. of Days: {data.totalDays}</p>
+        <div className="space-y-2">
+          {data.bookings.map((booking: any, index: number) => (
+            <div key={booking.id} className="rounded-md border border-border bg-background p-2">
+              <p className="text-xs font-medium text-foreground">Booking {index + 1}: {booking.guestName}</p>
+              <p className="text-[11px] text-muted-foreground">Check-in: {format(booking.checkIn, 'dd MMM yyyy')}</p>
+              <p className="text-[11px] text-muted-foreground">Check-out: {format(booking.checkOut, 'dd MMM yyyy')}</p>
+              <p className="text-[11px] text-muted-foreground">No. of Guests: {booking.guestsCount}</p>
+              <p className="text-[11px] text-muted-foreground">No. of Days: {booking.daysInRange}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="max-w-6xl mx-auto slide-up">
@@ -245,13 +317,34 @@ const DashboardPage = () => {
           </div>
         </div>
 
-        <div className="lg:col-span-2 bg-card rounded-xl border border-border p-6" style={{ boxShadow: 'var(--shadow-card)' }}>
+        <div className="relative lg:col-span-2 overflow-hidden bg-card rounded-xl border border-border p-6" style={{ boxShadow: 'var(--shadow-card)' }}>
+          <div className="pointer-events-none absolute -right-14 -top-14 h-44 w-44 rounded-full bg-green-500/10 blur-2xl" />
+          <div className="pointer-events-none absolute -left-16 -bottom-16 h-48 w-48 rounded-full bg-emerald-400/10 blur-2xl" />
+
           <div className="flex items-center justify-between gap-3 mb-4">
             <div>
               <h2 className="text-lg font-serif font-medium text-foreground">Monthly Booking Trend</h2>
-              <p className="text-xs text-muted-foreground">Bookings created across the days of {format(selectedMonth, 'MMMM yyyy')}</p>
+              <p className="text-xs text-muted-foreground">Suites on X-axis and No. of Days on Y-axis for {format(selectedMonth, 'MMMM yyyy')}</p>
             </div>
             <div className="text-xs text-muted-foreground">Occupancy rate: <span className="font-medium text-foreground">{occupancyRate}%</span></div>
+          </div>
+
+          <div className="mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div className="rounded-lg border border-border bg-background/80 p-3">
+              <p className="text-muted-foreground">Top Suite</p>
+              <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                <Hotel className="h-3.5 w-3.5 text-primary" />
+                {topSuiteByDays ? topSuiteByDays.room : 'N/A'}
+              </p>
+            </div>
+            <div className="rounded-lg border border-border bg-background/80 p-3">
+              <p className="text-muted-foreground">Total Suite Nights</p>
+              <p className="mt-1 text-sm font-semibold text-foreground">{totalSuiteNights}</p>
+            </div>
+            <div className="rounded-lg border border-border bg-background/80 p-3">
+              <p className="text-muted-foreground">Avg Nights / Suite</p>
+              <p className="mt-1 text-sm font-semibold text-foreground">{averageSuiteNights}</p>
+            </div>
           </div>
 
           <div className="h-72">
@@ -263,16 +356,22 @@ const DashboardPage = () => {
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyTrendData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.25)" />
-                  <XAxis dataKey="day" tick={{ fontSize: 12 }} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-                  <Tooltip />
+                <BarChart data={monthlyTrendData} margin={{ top: 14, right: 12, left: 4, bottom: 8 }}>
+                  <CartesianGrid vertical={false} strokeDasharray="4 4" stroke="rgba(148,163,184,0.22)" />
+                  <XAxis dataKey="room" tick={{ fontSize: 12 }} interval={0} height={44} tickLine={false} axisLine={false} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
+                  <Tooltip cursor={{ fill: 'rgba(34,197,94,0.08)' }} content={<SuiteTooltip />} />
                   <Legend />
-                  <Bar dataKey="Upcoming" stackId="a" fill={STATUS_COLORS.upcoming} radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="Active" stackId="a" fill={STATUS_COLORS.active} radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="Completed" stackId="a" fill={STATUS_COLORS.completed} radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="Cancelled" stackId="a" fill={STATUS_COLORS.cancelled} radius={[4, 4, 0, 0]} />
+                  {bookingSegmentKeys.map((key, index) => (
+                    <Bar
+                      key={key}
+                      name={`Booking ${index + 1}`}
+                      dataKey={key}
+                      stackId="suiteBookings"
+                      fill={BOOKING_SEGMENT_COLORS[index % BOOKING_SEGMENT_COLORS.length]}
+                      barSize={30}
+                    />
+                  ))}
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -303,39 +402,82 @@ const DashboardPage = () => {
         <div className="flex items-center justify-between gap-3 mb-4">
           <div>
             <h2 className="text-lg font-serif font-medium text-foreground">Monthly Bookings</h2>
-            <p className="text-xs text-muted-foreground">Guest names and room details for {format(selectedMonth, 'MMMM yyyy')}</p>
+            <p className="text-xs text-muted-foreground">Suite-wise booking details for {format(selectedMonth, 'MMMM yyyy')}</p>
           </div>
           <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
             {monthlyBookingsForDisplay.length} booking{monthlyBookingsForDisplay.length !== 1 ? 's' : ''}
           </Badge>
         </div>
 
-        {monthlyBookingsForDisplay.length === 0 ? (
+        {monthlyBookingsByRoom.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border bg-background/60 px-4 py-10 text-center">
             <p className="text-sm font-medium text-foreground">No bookings for this month</p>
-            <p className="text-xs text-muted-foreground mt-1">Select another month to see guest names and booking details.</p>
+            <p className="text-xs text-muted-foreground mt-1">Select another month to see suite-wise booking details.</p>
           </div>
         ) : (
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {monthlyBookingsForDisplay.map(booking => (
-              <div key={booking.id} className="rounded-xl border border-border bg-background p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">{booking.guestName}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{getRoomLabel(rooms, booking.roomNumber)}</p>
-                  </div>
-                  <Badge variant="outline" className={statusColor(booking.liveStatus)}>
-                    {booking.liveStatus}
-                  </Badge>
-                </div>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[220px]">Suite (Room)</TableHead>
+                  <TableHead>Booking Details</TableHead>
+                  <TableHead className="w-[120px] text-right">Count</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {monthlyBookingsByRoom.map(entry => (
+                  <TableRow key={entry.roomNumber}>
+                    <TableCell className="font-medium align-top whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => toggleRoom(entry.roomNumber)}
+                        className="flex items-center gap-2 text-left text-foreground hover:text-primary transition-colors"
+                        aria-expanded={expandedRooms.includes(entry.roomNumber)}
+                      >
+                        {expandedRooms.includes(entry.roomNumber) ? (
+                          <ChevronUp className="h-4 w-4 shrink-0" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4 shrink-0" />
+                        )}
+                        <span>{entry.roomLabel}</span>
+                      </button>
+                    </TableCell>
+                    <TableCell>
+                      {expandedRooms.includes(entry.roomNumber) ? (
+                        <div className="space-y-3">
+                          {entry.bookings.map(booking => (
+                            <div key={booking.id} className="rounded-lg border border-border bg-background p-3">
+                              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                <div>
+                                  <p className="text-sm font-semibold text-foreground">{booking.guestName}</p>
+                                  <p className="text-xs text-muted-foreground mt-1">{getRoomLabel(rooms, booking.roomNumber)}</p>
+                                </div>
+                                <Badge variant="outline" className={statusColor(booking.liveStatus)}>
+                                  {booking.liveStatus}
+                                </Badge>
+                              </div>
 
-                <div className="mt-3 space-y-1 text-xs text-muted-foreground">
-                  <p>Check-in: {format(booking.checkIn, 'dd MMM yyyy')}</p>
-                  <p>Check-out: {format(booking.checkOut, 'dd MMM yyyy')}</p>
-                  <p>Guests: {booking.adults + booking.children + booking.infants}{booking.pets > 0 ? ` + ${booking.pets} pet${booking.pets > 1 ? 's' : ''}` : ''}</p>
-                </div>
-              </div>
-            ))}
+                              <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-3">
+                                <p>Check-in: {format(booking.checkIn, 'dd MMM yyyy')}</p>
+                                <p>Check-out: {format(booking.checkOut, 'dd MMM yyyy')}</p>
+                                <p>Guests: {booking.adults + booking.children + booking.infants}{booking.pets > 0 ? ` + ${booking.pets} pet${booking.pets > 1 ? 's' : ''}` : ''}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">{entry.bookings.length} booking{entry.bookings.length !== 1 ? 's' : ''} hidden</p>
+                      )}
+                    </TableCell>
+                    <TableCell className="align-top text-right">
+                      <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+                        {entry.bookings.length}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         )}
       </div>

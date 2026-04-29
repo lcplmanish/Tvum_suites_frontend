@@ -6,6 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Upload, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+
+const ROOM_IMAGE_BUCKET = 'room-images';
 
 interface Props {
   room: Room;
@@ -19,6 +22,7 @@ const EditRoomDialog: React.FC<Props> = ({ room, open, onClose }) => {
   const [price, setPrice] = useState(room.price);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -35,7 +39,7 @@ const EditRoomDialog: React.FC<Props> = ({ room, open, onClose }) => {
     setImagePreview(URL.createObjectURL(file));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!name.trim()) {
       toast.error('Room name is required');
       return;
@@ -44,10 +48,52 @@ const EditRoomDialog: React.FC<Props> = ({ room, open, onClose }) => {
       toast.error('Price must be positive');
       return;
     }
-    const imageUrl = imagePreview || room.imageUrl;
-    updateRoom(room.number, { name: name.trim(), price, imageUrl });
-    toast.success('Room updated');
-    onClose();
+
+    setIsSaving(true);
+    try {
+      let imageUrl = room.imageUrl;
+
+      if (imageFile) {
+        const extension = imageFile.type === 'image/png' ? 'png' : 'jpg';
+        const filePath = `room-${room.number}.${extension}`;
+
+        const oldImagePaths = ['jpg', 'jpeg', 'png']
+          .map(ext => `room-${room.number}.${ext}`)
+          .filter(path => path !== filePath);
+
+        const { error: removeError } = await supabase.storage
+          .from(ROOM_IMAGE_BUCKET)
+          .remove(oldImagePaths);
+
+        if (removeError) {
+          console.warn('Failed to remove previous room images', removeError);
+        }
+
+        const { error: uploadError } = await supabase.storage
+          .from(ROOM_IMAGE_BUCKET)
+          .upload(filePath, imageFile, {
+            cacheControl: '3600',
+            upsert: true,
+            contentType: imageFile.type,
+          });
+
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        const { data } = supabase.storage.from(ROOM_IMAGE_BUCKET).getPublicUrl(filePath);
+        imageUrl = data.publicUrl;
+      }
+
+      await updateRoom(room.number, { name: name.trim(), price, imageUrl });
+      toast.success('Room updated');
+      onClose();
+    } catch (error) {
+      console.error('Failed to save room image', error);
+      toast.error('Failed to save room image');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -84,7 +130,9 @@ const EditRoomDialog: React.FC<Props> = ({ room, open, onClose }) => {
         </div>
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSave} className="warm-gradient border-0" style={{ color: 'hsl(36, 33%, 97%)' }}>Save</Button>
+          <Button onClick={handleSave} className="warm-gradient border-0" style={{ color: 'hsl(36, 33%, 97%)' }} disabled={isSaving}>
+            {isSaving ? 'Saving...' : 'Save'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
