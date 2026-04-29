@@ -7,16 +7,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Hotel, Lock, Mail, User, Shield } from 'lucide-react';
 import hotelBg from '@/assets/hotel-bg.jpg';
 import logoImage from '@/assets/image.png';
+import { getRoleLabel, type AppRole } from '@/lib/permissions';
 interface SignupPageProps {
   onSwitchToLogin: () => void;
 }
 
 const roleOptions = [
-  { value: 'staff', label: 'Staff' },
-  { value: 'supervisor', label: 'supervisor' },
-  { value: 'accountant', label: 'Accountant' },
-  { value: 'admin', label: 'Admin' },
-  { value: 'owner', label: 'Owner' },
+  { value: 'staff', label: getRoleLabel('staff') },
+  { value: 'supervisor', label: getRoleLabel('supervisor') },
+  { value: 'main_supervisor', label: getRoleLabel('main_supervisor') },
+  { value: 'accountant', label: getRoleLabel('accountant') },
+  { value: 'admin', label: getRoleLabel('admin') },
+  { value: 'owner', label: getRoleLabel('owner') },
 ];
 
 const SignupPage = ({ onSwitchToLogin }: SignupPageProps) => {
@@ -24,7 +26,7 @@ const SignupPage = ({ onSwitchToLogin }: SignupPageProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState('staff');
+  const [role, setRole] = useState<AppRole>('staff');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);

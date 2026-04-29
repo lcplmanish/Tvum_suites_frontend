@@ -14,9 +14,10 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { BadgeCheck, CheckCircle2, ClipboardList, Plus, Pencil, Sparkles, Target, Trash2, User, Users, Wrench } from 'lucide-react';
 import { toast } from 'sonner';
 import { canAccess } from '@/lib/permissions';
-import type { AppRole } from '@/lib/permissions';
+import { getRoleLabel, type AppRole } from '@/lib/permissions';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import { getRoomLabel } from '@/lib/utils';
 
 type WorkStatus = 'assigned' | 'in-progress' | 'completed';
 
@@ -132,15 +133,16 @@ const mapAssignmentRow = (row: StaffAssignmentRow): TaskAssignment => ({
 });
 
 const accountRoles: Array<{ value: AppRole; label: string }> = [
-  { value: 'staff', label: 'Staff' },
-  { value: 'supervisor', label: 'Supervisor' },
-  { value: 'accountant', label: 'Accountant' },
-  { value: 'admin', label: 'Admin' },
-  { value: 'owner', label: 'Owner' },
+  { value: 'staff', label: getRoleLabel('staff') },
+  { value: 'supervisor', label: getRoleLabel('supervisor') },
+  { value: 'main_supervisor', label: getRoleLabel('main_supervisor') },
+  { value: 'accountant', label: getRoleLabel('accountant') },
+  { value: 'admin', label: getRoleLabel('admin') },
+  { value: 'owner', label: getRoleLabel('owner') },
 ];
 
 const StaffPage = () => {
-  const { staff, roomTasks, addStaff, updateStaff, deleteStaff, createUser, toggleRoomTask, setAllRoomTaskSubtasks, userRole, user } = useApp();
+  const { staff, rooms, roomTasks, addStaff, updateStaff, deleteStaff, createUser, toggleRoomTask, setAllRoomTaskSubtasks, userRole, user } = useApp();
   const [showForm, setShowForm] = useState(false);
   const [showUserForm, setShowUserForm] = useState(false);
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
@@ -736,7 +738,7 @@ const StaffPage = () => {
               <div className="space-y-4">
                 {currentStaffAssignments.map(assignment => {
                   const completedPercentage = Math.round((assignment.progress / assignment.quantity) * 100);
-                  const roomLabel = assignment.roomNumber ? `Room ${assignment.roomNumber}` : 'General work';
+                  const roomLabel = getRoomLabel(rooms, assignment.roomNumber);
 
                   return (
                     <div key={assignment.id} className="rounded-2xl border border-border/70 bg-background/70 p-4">
@@ -796,7 +798,7 @@ const StaffPage = () => {
                 <div key={room.roomNumber} className="rounded-2xl border border-border/70 bg-background/70 p-4">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <h3 className="font-semibold text-foreground">Room {room.roomNumber}</h3>
+                      <h3 className="font-semibold text-foreground">{getRoomLabel(rooms, room.roomNumber)}</h3>
                       <p className="text-xs text-muted-foreground">{room.completedCount}/{room.totalCount} checklist items done</p>
                     </div>
                     <Badge variant={room.completion >= 100 ? 'outline' : 'secondary'} className="text-xs">
@@ -942,7 +944,7 @@ const StaffPage = () => {
                     <SelectContent>
                       <SelectItem value="all">General / No room</SelectItem>
                       {roomTasks.map(room => (
-                        <SelectItem key={room.roomNumber} value={String(room.roomNumber)}>Room {room.roomNumber}</SelectItem>
+                        <SelectItem key={room.roomNumber} value={String(room.roomNumber)}>{getRoomLabel(rooms, room.roomNumber)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -998,7 +1000,7 @@ const StaffPage = () => {
               <div className="space-y-4">
                 {activeAssignments.map(assignment => {
                   const completedPercentage = Math.round((assignment.progress / assignment.quantity) * 100);
-                  const roomLabel = assignment.roomNumber ? `Room ${assignment.roomNumber}` : 'General work';
+                  const roomLabel = getRoomLabel(rooms, assignment.roomNumber);
                   const statusStyles: Record<WorkStatus, string> = {
                     assigned: 'bg-secondary text-foreground',
                     'in-progress': 'bg-amber-100 text-amber-800 border-amber-200',
@@ -1115,7 +1117,7 @@ const StaffPage = () => {
                       <div className="mt-4 flex flex-wrap gap-2">
                         {member.assignments.slice(0, 3).map(assignment => (
                           <Badge key={assignment.id} variant="outline" className="text-[11px]">
-                            {assignment.workType}{assignment.roomNumber ? ` • Room ${assignment.roomNumber}` : ''}
+                            {assignment.workType}{assignment.roomNumber ? ` • ${getRoomLabel(rooms, assignment.roomNumber)}` : ''}
                           </Badge>
                         ))}
                         {member.assignments.length > 3 && (
@@ -1210,7 +1212,7 @@ const StaffPage = () => {
                     <div key={room.roomNumber} className="rounded-2xl border border-border/70 bg-background/70 p-4">
                       <div className="flex items-center justify-between gap-4">
                         <div>
-                          <h3 className="font-medium text-foreground">Room {room.roomNumber}</h3>
+                          <h3 className="font-medium text-foreground">{getRoomLabel(rooms, room.roomNumber)}</h3>
                           <p className="text-xs text-muted-foreground">{room.completedCount}/{room.totalCount} checklist items done</p>
                         </div>
                         {room.allDone ? (

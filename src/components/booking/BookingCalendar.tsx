@@ -4,18 +4,19 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths,
 import { ChevronLeft, ChevronRight, X, Users, CalendarIcon, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { getRoomLabel } from '@/lib/utils';
 
-const ROOM_COLORS: Record<number, { bg: string; text: string; label: string }> = {
-  1: { bg: 'bg-[hsl(78, 50%, 61%)]', text: 'text-[hsl(30,10%,15%)]', label: 'Gold' },
-  2: { bg: 'bg-[hsl(344, 83%, 73%)]', text: 'text-[hsl(30,10%,15%)]', label: 'Beige' },
-  3: { bg: 'bg-[hsl(25, 67%, 62%)]', text: 'text-[hsl(36,33%,97%)]', label: 'Brown' },
-  4: { bg: 'bg-[hsl(180, 59%, 37%)]', text: 'text-[hsl(36,33%,97%)]', label: 'Dark' },
+const ROOM_COLORS: Record<number, { bg: string; text: string; dot: string; label: string }> = {
+  1: { bg: 'bg-green-100', text: 'text-green-800', dot: 'bg-green-500', label: 'Green' },
+  2: { bg: 'bg-yellow-100', text: 'text-yellow-800', dot: 'bg-yellow-500', label: 'Yellow' },
+  3: { bg: 'bg-blue-100', text: 'text-blue-800', dot: 'bg-blue-500', label: 'Blue' },
+  4: { bg: 'bg-pink-100', text: 'text-pink-800', dot: 'bg-pink-500', label: 'Pink' },
 };
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const BookingCalendar: React.FC = () => {
-  const { bookings } = useApp();
+  const { bookings, rooms } = useApp();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
@@ -26,6 +27,9 @@ const BookingCalendar: React.FC = () => {
 
   const bookingsInMonth = useMemo(() => {
     return bookings.filter(b => {
+      if (b.status === 'cancelled') {
+        return false;
+      }
       const ci = startOfDay(b.checkIn);
       const co = startOfDay(b.checkOut);
       return ci <= monthEnd && co >= monthStart;
@@ -62,8 +66,8 @@ const BookingCalendar: React.FC = () => {
       <div className="flex flex-wrap gap-3 mb-4">
         {Object.entries(ROOM_COLORS).map(([num, color]) => (
           <div key={num} className="flex items-center gap-1.5">
-            <div className={`w-3 h-3 rounded-sm {color.bg}`} />
-            <span className="text-xs text-muted-foreground">Room {num}</span>
+            <div className={`inline-flex h-2.5 w-2.5 rounded-full ${color.dot}`} />
+            <span className="text-xs text-muted-foreground">{getRoomLabel(rooms, Number(num))}</span>
           </div>
         ))}
       </div>
@@ -94,14 +98,14 @@ const BookingCalendar: React.FC = () => {
               <div className="space-y-0.5">
                 {dayBookings.slice(0, 3).map(b => {
                   const colors = ROOM_COLORS[b.roomNumber] || ROOM_COLORS[1];
+                  const roomLabel = getRoomLabel(rooms, b.roomNumber);
                   return (
                     <button
                       key={b.id}
                       onClick={() => setSelectedBooking(b)}
-                      className={`w-full text-left px-1 py-0.5 rounded text-[10px] md:text-xs truncate ${colors.bg} ${colors.text} hover:opacity-80 transition-opacity cursor-pointer`}
+                      className={`w-full text-left px-1.5 py-0.5 rounded text-[10px] md:text-xs truncate ${colors.bg} ${colors.text} hover:opacity-80 transition-opacity cursor-pointer`}
                     >
-                      <span className="hidden md:inline">{b.guestName} - R{b.roomNumber}</span>
-                      <span className="md:hidden">R{b.roomNumber}</span>
+                      <span>{roomLabel}</span>
                     </button>
                   );
                 })}
@@ -123,6 +127,7 @@ const BookingCalendar: React.FC = () => {
           <div className="space-y-2">
             {bookingsInMonth.map(b => {
               const colors = ROOM_COLORS[b.roomNumber] || ROOM_COLORS[1];
+              const roomLabel = getRoomLabel(rooms, b.roomNumber);
               return (
                 <button
                   key={b.id}
@@ -130,9 +135,9 @@ const BookingCalendar: React.FC = () => {
                   className={`w-full text-left p-3 rounded-lg border border-border bg-card hover:bg-secondary/30 transition-colors`}
                 >
                   <div className="flex items-center gap-2">
-                    <div className={`w-2.5 h-2.5 rounded-full ${colors.bg}`} />
-                    <span className="text-sm font-medium text-foreground">{b.guestName}</span>
-                    <span className="text-xs text-muted-foreground ml-auto">Room {b.roomNumber}</span>
+                    <div className={`w-2.5 h-2.5 rounded-full ${colors.dot}`} />
+                    <span className="text-sm font-medium text-foreground">{roomLabel}</span>
+                    <span className="text-xs text-muted-foreground ml-auto">{b.guestName}</span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     {format(b.checkIn, 'MMM d')} — {format(b.checkOut, 'MMM d, yyyy')}
@@ -153,14 +158,14 @@ const BookingCalendar: React.FC = () => {
           {selectedBooking && (
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className={`w-4 h-4 rounded ${ROOM_COLORS[selectedBooking.roomNumber]?.bg || 'bg-muted'}`} />
+                <div className={`w-4 h-4 rounded ${ROOM_COLORS[selectedBooking.roomNumber]?.dot || 'bg-muted'}`} />
                 <span className="text-base font-semibold text-foreground">{selectedBooking.guestName}</span>
               </div>
 
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Room</p>
-                  <p className="font-medium text-foreground">Room {selectedBooking.roomNumber}</p>
+                  <p className="font-medium text-foreground">{getRoomLabel(rooms, selectedBooking.roomNumber)}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Status</p>

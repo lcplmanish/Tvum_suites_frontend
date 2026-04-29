@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { getRoleLabel } from '@/lib/permissions';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -248,7 +249,7 @@ const LaundryPage = () => {
           <p className="text-muted-foreground mt-1">Track laundry dispatch and return dates plus bedding quantities.</p>
         </div>
         <div className="text-sm text-muted-foreground">
-          Role: <span className="font-medium capitalize">{userRole}</span>
+          Role: <span className="font-medium">{getRoleLabel(userRole)}</span>
         </div>
       </div>
 
@@ -368,27 +369,27 @@ const LaundryPage = () => {
               <span>{pendingRecords.length}</span>
             </div>
             <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>Total Bedsheets Missing</span>
+              <span>Total Bedsheets Awaited</span>
               <span>{totalBedsheetMissing}</span>
             </div>
             <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>Total Pillow Covers Missing</span>
+              <span>Total Pillow Covers Awaited</span>
               <span>{totalPillowMissing}</span>
             </div>
             <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>Total Towels Missing</span>
+              <span>Total Towels Awaited</span>
               <span>{totalTowelMissing}</span>
             </div>
             <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>Total Hand Towels Missing</span>
+              <span>Total Hand Towels Awaited</span>
               <span>{totalHandTowelMissing}</span>
             </div>
             <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>Total Kitchen Towels Missing</span>
+              <span>Total Kitchen Towels Awaited</span>
               <span>{totalKitchenTowelMissing}</span>
             </div>
             <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>Total Blankets Missing</span>
+              <span>Total Blankets Awaited</span>
               <span>{totalBlanketMissing}</span>
             </div>
             {previousMissingFilled && (

@@ -38,6 +38,7 @@ import { toast } from 'sonner';
 
 import GuestDetailSection, { type GuestDetail } from '@/components/booking/GuestDetailSection';
 import BookingCalendar from '@/components/booking/BookingCalendar';
+import { supabase } from '@/integrations/supabase/client';
 
 // rooms now come from context
 
@@ -54,6 +55,7 @@ const amenities = [
 ];
 
 const emptyGuest = (): GuestDetail => ({ firstName: '', lastName: '', phone: '', notes: '', idProofFile: null });
+const ID_PROOF_BUCKET = 'guest-id-proofs';
 
 const BookingPage = () => {
   const { bookings, addBooking, rooms } = useApp();
@@ -69,6 +71,7 @@ const BookingPage = () => {
   const [checkInSlot, setCheckInSlot] = useState('14:00');
   const [checkOutSlot, setCheckOutSlot] = useState('11:00');
   const [guestDetails, setGuestDetails] = useState<GuestDetail[]>([emptyGuest()]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const totalGuests = adults + children + infants;
 
@@ -109,7 +112,31 @@ const BookingPage = () => {
     setGuestDetails(prev => prev.map((g, i) => i === index ? guest : g));
   };
 
-  const handleConfirm = () => {
+  const uploadGuestIdProof = async (file: File, guestIndex: number) => {
+    const extension = file.name.includes('.') ? file.name.split('.').pop() : undefined;
+    const fileExtension = (extension || 'bin').toLowerCase();
+    const fileName = `${Date.now()}-${guestIndex + 1}-${Math.random().toString(36).slice(2, 8)}.${fileExtension}`;
+    const filePath = `booking-id-proofs/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from(ID_PROOF_BUCKET)
+      .upload(filePath, file, { contentType: file.type, upsert: false });
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+    const { data: publicData } = supabase.storage
+      .from(ID_PROOF_BUCKET)
+      .getPublicUrl(filePath);
+
+    return {
+      idProofUrl: publicData.publicUrl,
+      idProofType: file.type,
+    };
+  };
+
+  const handleConfirm = async () => {
     if (!selectedRoom || !checkIn || !checkOut) {
       toast.error('Please select a room and dates');
       return;
@@ -139,47 +166,69 @@ const BookingPage = () => {
 
     const bookingSourceValue = bookingSource === 'others' ? otherSource.trim() : bookingSource;
 
-    // Build guests array (files stored as object URLs for now — will use storage with backend)
-    const guests = guestDetails.map(g => ({
-      name: `${g.firstName.trim()} ${g.lastName.trim()}`.trim(),
-      phone: g.phone.trim(),
-      notes: g.notes.trim(),
-      idProofUrl: g.idProofFile ? URL.createObjectURL(g.idProofFile) : '',
-      idProofType: g.idProofFile?.type ?? '',
-    }));
+    try {
+      setIsSubmitting(true);
 
-    addBooking({
-      roomNumber: selectedRoom,
-      checkIn,
-      checkOut,
-      checkInTime: checkInSlot,
-      checkOutTime: checkOutSlot,
-      guestName: guests[0].name,
-      phone: guests[0].phone || undefined,
-      notes: guests[0].notes || undefined,
-      adults,
-      children,
-      infants,
-      pets,
-      breakfastCount: 0,
-      lunchCount: 0,
-      guests,
-      bookingSource: bookingSourceValue,
-    });
-    toast.success('Booking confirmed!', { description: `${guests[0].name} • Room ${selectedRoom}` });
-    // Reset
-    setSelectedRoom(null);
-    setCheckIn(undefined);
-    setCheckOut(undefined);
-    setAdults(1);
-    setChildren(0);
-    setInfants(0);
-    setPets(0);
-    setBookingSource('Airbnb');
-    setOtherSource('');
-    setCheckInSlot('14:00');
-    setCheckOutSlot('11:00');
-    setGuestDetails([emptyGuest()]);
+      const guests = await Promise.all(
+        guestDetails.map(async (g, index) => {
+          let idProofUrl = '';
+          let idProofType = '';
+
+          if (g.idProofFile) {
+            const uploaded = await uploadGuestIdProof(g.idProofFile, index);
+            idProofUrl = uploaded.idProofUrl;
+            idProofType = uploaded.idProofType;
+          }
+
+          return {
+            name: `${g.firstName.trim()} ${g.lastName.trim()}`.trim(),
+            phone: g.phone.trim(),
+            notes: g.notes.trim(),
+            idProofUrl,
+            idProofType,
+          };
+        })
+      );
+
+      await addBooking({
+        roomNumber: selectedRoom,
+        checkIn,
+        checkOut,
+        checkInTime: checkInSlot,
+        checkOutTime: checkOutSlot,
+        guestName: guests[0].name,
+        phone: guests[0].phone || undefined,
+        notes: guests[0].notes || undefined,
+        adults,
+        children,
+        infants,
+        pets,
+        breakfastCount: 0,
+        lunchCount: 0,
+        guests,
+        bookingSource: bookingSourceValue,
+      });
+
+      toast.success('Booking confirmed!', { description: `${guests[0].name} • Room ${selectedRoom}` });
+      // Reset
+      setSelectedRoom(null);
+      setCheckIn(undefined);
+      setCheckOut(undefined);
+      setAdults(1);
+      setChildren(0);
+      setInfants(0);
+      setPets(0);
+      setBookingSource('Airbnb');
+      setOtherSource('');
+      setCheckInSlot('14:00');
+      setCheckOutSlot('11:00');
+      setGuestDetails([emptyGuest()]);
+    } catch (error) {
+      console.error('Failed to upload ID proofs or create booking', error);
+      toast.error('Could not save booking. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const Counter = ({ label, icon: Icon, value, onChange, min = 0 }: {
@@ -451,9 +500,9 @@ const BookingPage = () => {
           onClick={handleConfirm}
           className="w-full warm-gradient border-0 h-12 text-base font-semibold shadow-lg hover:opacity-90 transition-opacity"
           style={{ color: 'hsl(36, 33%, 97%)' }}
-          disabled={!canConfirm}
+          disabled={!canConfirm || isSubmitting}
         >
-          Confirm Booking
+          {isSubmitting ? 'Saving Booking...' : 'Confirm Booking'}
         </Button>
       </div>
     </div>

@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { format } from 'date-fns';
+import { format, startOfDay } from 'date-fns';
 import { Coffee, Lock, Minus, Plus, Printer, ReceiptText, Users, UtensilsCrossed } from 'lucide-react';
 import { toast } from 'sonner';
 
 import logoImage from '@/assets/image.png';
-import { useApp, type FoodBill } from '@/context/AppContext';
+import { useApp, type Booking, type FoodBill } from '@/context/AppContext';
 import { canAccess } from '@/lib/permissions';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { getRoomLabel } from '@/lib/utils';
 import {
   Table,
   TableBody,
@@ -37,11 +38,31 @@ const getTodayDateString = () => {
     .join('-');
 };
 
+const getLiveBookingStatus = (booking: Booking): Booking['status'] => {
+  if (booking.status === 'cancelled') {
+    return 'cancelled';
+  }
+
+  const today = startOfDay(new Date()).getTime();
+  const checkIn = startOfDay(booking.checkIn).getTime();
+  const checkOut = startOfDay(booking.checkOut).getTime();
+
+  if (today < checkIn) {
+    return 'upcoming';
+  }
+
+  if (today > checkOut) {
+    return 'completed';
+  }
+
+  return 'active';
+};
+
 const FoodPage = () => {
-  const { bookings, foodBills, updateBooking, updateFoodPricing, saveFoodBill, foodPricing, userRole } = useApp();
+  const { bookings, rooms, foodBills, updateBooking, updateFoodPricing, saveFoodBill, foodPricing, userRole } = useApp();
   const canEditPrices = canAccess(userRole, 'edit_food_prices');
   const activeBookings = useMemo(
-    () => bookings.filter(booking => booking.status !== 'cancelled').sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()),
+    () => bookings.filter(booking => getLiveBookingStatus(booking) === 'active').sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()),
     [bookings]
   );
   const [selectedBookingId, setSelectedBookingId] = useState<string>('');
@@ -301,6 +322,31 @@ const FoodPage = () => {
   const previewDiscountAmount = isDiscountEnabled ? (previewSubTotal + previewGstAmount) * (discountPercent / 100) : 0;
   const previewFinalTotal = previewSubTotal + previewGstAmount - previewDiscountAmount;
 
+  const printWindowWhenReady = (printWindow: Window) => {
+    const finishPrint = () => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          printWindow.focus();
+          printWindow.print();
+        });
+      });
+    };
+
+    const logo = printWindow.document.querySelector('img[data-print-logo="true"]') as HTMLImageElement | null;
+    if (!logo) {
+      finishPrint();
+      return;
+    }
+
+    if (logo.complete && logo.naturalWidth > 0) {
+      setTimeout(finishPrint, 250);
+      return;
+    }
+
+    logo.onload = () => setTimeout(finishPrint, 250);
+    logo.onerror = () => setTimeout(finishPrint, 250);
+  };
+
   const handlePrintPreviewBill = () => {
     if (previewBills.length === 0) {
       toast.error('No bill records available to print');
@@ -380,7 +426,7 @@ const FoodPage = () => {
             <div class="header">
               <div class="header-top">
                 <div class="header-logo">
-                  <img src="${logoBase64}" alt="TVUM Suites Logo">
+                  <img src="${logoBase64 || logoImage}" alt="TVUM Suites Logo" data-print-logo="true">
                 </div>
                 <div class="header-left">
                   <div class="hotel-name">TVUM SUITES</div>
@@ -404,7 +450,7 @@ const FoodPage = () => {
               <div class="header-grid">
                 <div>
                   <div class="header-cell"><span class="header-cell-label">Suite No.</span></div>
-                  <div style="font-size: 12px;">${previewBills[0]?.roomNumber || '-'}</div>
+                  <div style="font-size: 12px;">${previewBills[0] ? getRoomLabel(rooms, previewBills[0].roomNumber) : '-'}</div>
                 </div>
                 <div>
                   <div class="header-cell"><span class="header-cell-label">Guest</span></div>
@@ -474,8 +520,7 @@ const FoodPage = () => {
     `);
 
     printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
+    printWindowWhenReady(printWindow);
   };
 
   const handlePrintLatestBillingSheet = () => {
@@ -552,7 +597,7 @@ const FoodPage = () => {
             <div class="header">
               <div class="header-top">
                 <div class="header-logo">
-                  <img src="${logoBase64}" alt="TVUM Suites Logo">
+                  <img src="${logoBase64 || logoImage}" alt="TVUM Suites Logo" data-print-logo="true">
                 </div>
                 <div class="header-left">
                   <div class="hotel-name">TVUM SUITES</div>
@@ -576,7 +621,7 @@ const FoodPage = () => {
               <div class="header-grid">
                 <div>
                   <div class="header-cell"><span class="header-cell-label">Suite No.</span></div>
-                  <div style="font-size: 12px;">${selectedBooking.roomNumber}</div>
+                  <div style="font-size: 12px;">${getRoomLabel(rooms, selectedBooking.roomNumber)}</div>
                 </div>
                 <div>
                   <div class="header-cell"><span class="header-cell-label">Guest</span></div>
@@ -646,8 +691,7 @@ const FoodPage = () => {
     `);
 
     printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
+    printWindowWhenReady(printWindow);
   };
 
   const printSavedBill = (payload: {
@@ -757,7 +801,7 @@ const FoodPage = () => {
               <div class="header-grid">
                 <div>
                   <div class="header-cell"><span class="header-cell-label">Suite No.</span></div>
-                  <div style="font-size: 12px;">${payload.roomNumber}</div>
+                  <div style="font-size: 12px;">${getRoomLabel(rooms, Number(payload.roomNumber))}</div>
                 </div>
                 <div>
                   <div class="header-cell"><span class="header-cell-label">Guest</span></div>
@@ -990,7 +1034,7 @@ const FoodPage = () => {
                     ) : (
                       activeBookings.map(booking => (
                         <SelectItem key={booking.id} value={booking.id}>
-                          Room {booking.roomNumber} - {booking.guestName}
+                          {getRoomLabel(rooms, booking.roomNumber)} - {booking.guestName}
                         </SelectItem>
                       ))
                     )}
@@ -1010,7 +1054,7 @@ const FoodPage = () => {
                     <div className="rounded-xl border border-border bg-background p-4">
                       <p className="text-xs uppercase tracking-wider text-muted-foreground">Guest</p>
                       <p className="mt-2 text-lg font-semibold text-foreground">{selectedBooking.guestName}</p>
-                      <p className="text-sm text-muted-foreground">Room {selectedBooking.roomNumber}</p>
+                      <p className="text-sm text-muted-foreground">{getRoomLabel(rooms, selectedBooking.roomNumber)}</p>
                     </div>
                     <div className="rounded-xl border border-border bg-background p-4">
                       <p className="text-xs uppercase tracking-wider text-muted-foreground">Stay</p>
@@ -1306,7 +1350,7 @@ const FoodPage = () => {
                   previewBills.map((bill) => (
                     <TableRow key={bill.id}>
                       <TableCell>{format(new Date(bill.orderDate), 'MMM d, yyyy')}</TableCell>
-                      <TableCell>Room {bill.roomNumber}</TableCell>
+                      <TableCell>{getRoomLabel(rooms, bill.roomNumber)}</TableCell>
                       <TableCell className="text-right">{bill.breakfastCount}</TableCell>
                       <TableCell className="text-right">{currency.format(bill.breakfastTotal)}</TableCell>
                       <TableCell className="text-right">{bill.lunchCount}</TableCell>

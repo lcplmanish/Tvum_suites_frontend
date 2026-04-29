@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useApp, Booking } from '@/context/AppContext';
-import { format } from 'date-fns';
+import { format, startOfDay } from 'date-fns';
 import { Search, Eye, Pencil, Trash2, FileText, Users } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import EditBookingDrawer from '@/components/guest/EditBookingDrawer';
 import { toast } from 'sonner';
 import { canAccess } from '@/lib/permissions';
 import type { AppRole } from '@/lib/permissions';
+import { getRoomLabel } from '@/lib/utils';
 
 const statusColors: Record<string, string> = {
   upcoming: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
@@ -21,8 +22,28 @@ const statusColors: Record<string, string> = {
   cancelled: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
 };
 
+const getLiveBookingStatus = (booking: Booking): Booking['status'] => {
+  if (booking.status === 'cancelled') {
+    return 'cancelled';
+  }
+
+  const today = startOfDay(new Date()).getTime();
+  const checkIn = startOfDay(booking.checkIn).getTime();
+  const checkOut = startOfDay(booking.checkOut).getTime();
+
+  if (today < checkIn) {
+    return 'upcoming';
+  }
+
+  if (today > checkOut) {
+    return 'completed';
+  }
+
+  return 'active';
+};
+
 const GuestInfoPage = () => {
-  const { bookings, deleteBooking, userRole } = useApp();
+  const { bookings, rooms, deleteBooking, userRole } = useApp();
   const [search, setSearch] = useState('');
   const [roomFilter, setRoomFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -34,13 +55,14 @@ const GuestInfoPage = () => {
 
   const filtered = useMemo(() => {
     return bookings.filter(b => {
+      const liveStatus = getLiveBookingStatus(b);
       const q = search.toLowerCase();
       const matchSearch = !q ||
         b.guestName.toLowerCase().includes(q) ||
         b.phone?.toLowerCase().includes(q) ||
         b.guests.some(g => g.name.toLowerCase().includes(q) || g.phone.toLowerCase().includes(q));
       const matchRoom = roomFilter === 'all' || b.roomNumber === Number(roomFilter);
-      const matchStatus = statusFilter === 'all' || b.status === statusFilter;
+      const matchStatus = statusFilter === 'all' || liveStatus === statusFilter;
       return matchSearch && matchRoom && matchStatus;
     });
   }, [bookings, search, roomFilter, statusFilter]);
@@ -86,10 +108,9 @@ const GuestInfoPage = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Rooms</SelectItem>
-            <SelectItem value="1">Room 1</SelectItem>
-            <SelectItem value="2">Room 2</SelectItem>
-            <SelectItem value="3">Room 3</SelectItem>
-            <SelectItem value="4">Room 4</SelectItem>
+            {rooms.map((room) => (
+              <SelectItem key={room.number} value={String(room.number)}>{room.name}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -132,6 +153,7 @@ const GuestInfoPage = () => {
                 </TableRow>
               ) : (
                 filtered.map(b => {
+                  const liveStatus = getLiveBookingStatus(b);
                   const primary = b.guests[0];
                   const hasId = b.guests.some(g => g.idProofUrl);
                   return (
@@ -147,7 +169,7 @@ const GuestInfoPage = () => {
                           <Users className="w-3.5 h-3.5" /> {b.guests.length}
                         </Button>
                       </TableCell>
-                      <TableCell>Room {b.roomNumber}</TableCell>
+                      <TableCell>{getRoomLabel(rooms, b.roomNumber)}</TableCell>
                       <TableCell>{format(new Date(b.checkIn), 'MMM d, yyyy')}</TableCell>
                       <TableCell>{format(new Date(b.checkOut), 'MMM d, yyyy')}</TableCell>
                       <TableCell className="text-sm">{primary?.phone || '—'}</TableCell>
@@ -169,8 +191,8 @@ const GuestInfoPage = () => {
                         )}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary" className={statusColors[b.status]}>
-                          {b.status}
+                        <Badge variant="secondary" className={statusColors[liveStatus]}>
+                          {liveStatus}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -211,7 +233,7 @@ const GuestInfoPage = () => {
         <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              All Guests — {viewGuestsBooking?.guestName} (Room {viewGuestsBooking?.roomNumber})
+              All Guests — {viewGuestsBooking?.guestName} ({viewGuestsBooking ? getRoomLabel(rooms, viewGuestsBooking.roomNumber) : ''})
             </DialogTitle>
           </DialogHeader>
           {viewGuestsBooking && (

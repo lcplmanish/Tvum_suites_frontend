@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink as RouterNavLink, useLocation } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
 import { canAccess } from '@/lib/permissions';
-import type { AppRole, Feature } from '@/lib/permissions';
+import { getRoleLabel, type AppRole, type Feature } from '@/lib/permissions';
 
 import {
   Sidebar,
@@ -60,7 +60,7 @@ export function AppSidebar() {
           {!collapsed && (
             <div>
               <h2 className="font-serif text-lg text-sidebar-foreground">Tvum Suites</h2>
-              <p className="text-xs text-sidebar-foreground/60 capitalize">{userRole}</p>
+              <p className="text-xs text-sidebar-foreground/60">{getRoleLabel(userRole)}</p>
             </div>
           )}
         </div>
