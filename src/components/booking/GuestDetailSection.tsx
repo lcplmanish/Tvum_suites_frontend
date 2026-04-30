@@ -53,8 +53,8 @@ const GuestDetailSection: React.FC<GuestDetailSectionProps> = ({ index, guest, o
                 <Input value={guest.firstName} onChange={e => update('firstName', e.target.value)} placeholder="First name" className="mt-1.5" />
               </div>
               <div>
-                <Label className="text-muted-foreground text-xs uppercase tracking-wider">Second name *</Label>
-                <Input value={guest.lastName} onChange={e => update('lastName', e.target.value)} placeholder="Second name" className="mt-1.5" />
+                <Label className="text-muted-foreground text-xs uppercase tracking-wider">Surname *</Label>
+                <Input value={guest.lastName} onChange={e => update('lastName', e.target.value)} placeholder="Surname" className="mt-1.5" />
               </div>
             </div>
             <div>
