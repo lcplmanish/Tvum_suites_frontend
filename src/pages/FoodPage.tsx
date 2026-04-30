@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { format, startOfDay } from 'date-fns';
 import { Coffee, Lock, Minus, Plus, Printer, ReceiptText, Users, UtensilsCrossed } from 'lucide-react';
 import { toast } from 'sonner';
@@ -497,10 +497,7 @@ const FoodPage = () => {
             </div>
 
             <div class="footer-section">
-              <div class="footer-cell">
-                <div class="footer-label">PAN No:</div>
-                <div>ONRPS6145C</div>
-              </div>
+             
               <div class="footer-cell">
                 <div class="footer-label">Payment Method</div>
               </div>
@@ -668,10 +665,7 @@ const FoodPage = () => {
             </div>
 
             <div class="footer-section">
-              <div class="footer-cell">
-                <div class="footer-label">PAN No:</div>
-                <div>ONRPS6145C</div>
-              </div>
+            
               <div class="footer-cell">
                 <div class="footer-label">Payment Method</div>
               </div>
@@ -693,8 +687,7 @@ const FoodPage = () => {
     printWindow.document.close();
     printWindowWhenReady(printWindow);
   };
-
-  const printSavedBill = (payload: {
+const printSavedBill = (payload: {
     guestName: string;
     invoiceNo: string;
     roomNumber: string;
@@ -717,11 +710,8 @@ const FoodPage = () => {
     }
 
     const subtotal = payload.totalAmount;
-    const gstAmount = 0;
-    const discountAmount = 0;
-    const grandTotal = subtotal + gstAmount - discountAmount;
+    const grandTotal = subtotal;
 
-    // Create item details
     const itemRows = [];
     if (payload.breakfastCount > 0) {
       itemRows.push(`<tr><td>${format(new Date(payload.orderDate), 'dd.MM.yyyy')}</td><td>Breakfast for ${payload.breakfastCount} person${payload.breakfastCount > 1 ? 's' : ''}</td><td style="text-align:right;">₹ ${payload.breakfastPrice.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td><td style="text-align:right;">₹ ${payload.breakfastTotal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td></tr>`);
@@ -733,140 +723,171 @@ const FoodPage = () => {
       itemRows.push(`<tr><td>${format(new Date(payload.orderDate), 'dd.MM.yyyy')}</td><td>Tea/Coffee for ${payload.teaCoffeeCount} person${payload.teaCoffeeCount > 1 ? 's' : ''}</td><td style="text-align:right;">₹ ${payload.teaCoffeePrice.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td><td style="text-align:right;">₹ ${payload.teaCoffeeTotal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td></tr>`);
     }
 
+    const billHTML = `
+      <div class="bill">
+        <div class="header">
+          <div class="header-top">
+            <div class="header-logo">
+              <img src="${logoBase64}" alt="TVUM Suites Logo" data-print-logo="true">
+            </div>
+            <div class="header-left">
+              <div class="hotel-name">TVUM SUITES</div>
+              <div class="hotel-info">
+                <div>3, Midas Touch</div>
+                <div>94 Lulla Nagar, Pune - 411040</div>
+                <div>Mobile:- +91 8888999939</div>
+              </div>
+            </div>
+            <div class="header-right">
+              <div style="margin-bottom: 8px;">
+                <div class="header-cell-label">Invoice No</div>
+                <div style="font-size: 12px; font-weight: bold;">${payload.invoiceNo}</div>
+              </div>
+              <div>
+                <div class="header-cell-label">Date</div>
+                <div style="font-size: 11px;">${format(new Date(), 'dd.MM.yyyy')}</div>
+              </div>
+            </div>
+          </div>
+          <div class="header-grid">
+            <div>
+              <div class="header-cell-label">Suite No.</div>
+              <div style="font-size: 11px;">${getRoomLabel(rooms, Number(payload.roomNumber))}</div>
+            </div>
+            <div>
+              <div class="header-cell-label">Guest</div>
+              <div style="font-size: 11px;">${payload.guestName}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="food-bill-title">FOOD BILL</div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 15%;">Date</th>
+                <th style="width: 40%;">Description</th>
+                <th style="width: 10%;">Qty</th>
+                <th style="width: 15%;">Rate</th>
+                <th style="width: 20%;">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemRows.join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="summary-section">
+          <div class="summary-row">
+            <div class="summary-label">Subtotal</div>
+            <div class="summary-amount">₹ ${subtotal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div>
+          </div>
+          <div class="summary-row grand-total">
+            <div class="summary-label">TOTAL</div>
+            <div class="summary-amount">₹ ${grandTotal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div>
+          </div>
+        </div>
+
+        <div class="footer-section">
+          <div class="footer-cell">
+            <div class="footer-label">Payment Method</div>
+          </div>
+          <div class="footer-cell" style="text-align:right;">
+            <div class="footer-label">For TVUM Suites</div>
+            <div style="margin-top: 28px;">Signature</div>
+          </div>
+        </div>
+
+        <div class="jurisdiction">SUBJECT TO PUNE JURISDICTION</div>
+      </div>
+    `;
+
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
         <head>
-          <title>.</title>
+          <title>TVUM Suites - Food Bill</title>
           <style>
-            * { margin: 0; padding: 0; }
-            body { font-family: 'Arial', sans-serif; padding: 40px; color: #333; }
-            .container { max-width: 900px; margin: 0 auto; }
-            .header { border: 2px solid #000; padding: 20px; margin-bottom: 20px; }
-            .header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; gap: 20px; }
-            .header-logo { flex-shrink: 0; }
-            .header-logo img { width: 80px; height: 80px; object-fit: contain; }
+            @page { size: A4 portrait; margin: 10mm 14mm; }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: 'Arial', sans-serif; color: #333; }
+            .bill { padding: 10px 0; }
+            .header { border: 1.5px solid #000; padding: 12px; margin-bottom: 10px; }
+            .header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 12px; }
+            .header-logo img { width: 60px; height: 60px; object-fit: contain; }
             .header-left { flex: 1; }
-            .header-right { flex: 1; text-align: right; }
-            .hotel-name { font-size: 24px; font-weight: bold; margin-bottom: 5px; }
-            .hotel-info { font-size: 11px; line-height: 1.6; }
-            .header-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 15px; padding-top: 15px; border-top: 1px solid #000; }
-            .header-cell { font-size: 11px; }
-            .header-cell-label { font-weight: bold; }
-            .food-bill-title { text-align: center; font-size: 18px; font-weight: bold; margin-top: 15px; }
-            .table-container { margin: 20px 0; }
-            table { width: 100%; border-collapse: collapse; font-size: 11px; }
-            th, td { border: 1px solid #000; padding: 8px; text-align: left; }
+            .header-right { text-align: right; }
+            .hotel-name { font-size: 18px; font-weight: bold; margin-bottom: 3px; }
+            .hotel-info { font-size: 10px; line-height: 1.5; }
+            .header-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #000; font-size: 10px; }
+            .header-cell-label { font-weight: bold; font-size: 10px; }
+            .food-bill-title { text-align: center; font-size: 14px; font-weight: bold; margin: 8px 0; }
+            .table-container { margin: 8px 0; }
+            table { width: 100%; border-collapse: collapse; font-size: 10px; }
+            th, td { border: 1px solid #000; padding: 5px 6px; text-align: left; }
             th { background-color: #f0f0f0; font-weight: bold; }
-            .amount-col { text-align: right; }
-            .qty-col { text-align: center; }
-            .summary-section { margin-top: 20px; margin-left: auto; width: 300px; }
-            .summary-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 11px; }
+            td[style*="text-align:right"] { text-align: right; }
+            .summary-section { margin-top: 8px; margin-left: auto; width: 260px; }
+            .summary-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 10px; }
             .summary-label { flex: 1; }
-            .summary-amount { text-align: right; min-width: 80px; }
-            .grand-total { font-weight: bold; border-top: 2px solid #000; padding-top: 8px; margin-top: 8px; font-size: 12px; }
-            .footer-section { margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 10px; }
-            .footer-cell { }
-            .footer-label { font-weight: bold; margin-bottom: 5px; }
-            .signature-area { border-top: 1px solid #000; margin-top: 30px; padding-top: 20px; text-align: right; font-size: 10px; }
-            .jurisdiction { text-align: center; margin-top: 20px; font-weight: bold; font-size: 10px; }
+            .summary-amount { text-align: right; min-width: 70px; }
+            .grand-total { font-weight: bold; border-top: 1.5px solid #000; padding-top: 5px; margin-top: 4px; font-size: 11px; }
+            .footer-section { margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 10px; }
+            .footer-label { font-weight: bold; margin-bottom: 3px; }
+            .jurisdiction { text-align: center; margin-top: 10px; font-weight: bold; font-size: 9px; }
+
+            /* Separator */
+            .separator {
+              display: flex;
+              align-items: center;
+              margin: 8px 0;
+              gap: 8px;
+            }
+            .separator-line {
+              flex: 1;
+              border-top: 1.5px dashed #555;
+            }
+            .separator-label {
+              font-size: 9px;
+              font-weight: bold;
+              color: #555;
+              white-space: nowrap;
+              letter-spacing: 1px;
+            }
           </style>
         </head>
         <body>
-          <div class="container">
-            <div class="header">
-              <div class="header-top">
-                <div class="header-logo">
-                  <img src="${logoBase64}" alt="TVUM Suites Logo">
-                </div>
-                <div class="header-left">
-                  <div class="hotel-name">TVUM SUITES</div>
-                  <div class="hotel-info">
-                    <div>3, Midas Touch</div>
-                    <div>94 Lulla Nagar, Pune - 411040</div>
-                    <div>Mobile:- +91 8888999939</div>
-                  </div>
-                </div>
-                <div class="header-right">
-                  <div style="margin-bottom: 10px;">
-                    <div class="header-cell-label">Invoice No</div>
-                    <div style="font-size: 13px; font-weight: bold;">${payload.invoiceNo}</div>
-                  </div>
-                  <div>
-                    <div class="header-cell-label">Date</div>
-                    <div style="font-size: 12px;">${format(new Date(), 'dd.MM.yyyy')}</div>
-                  </div>
-                </div>
-              </div>
-              <div class="header-grid">
-                <div>
-                  <div class="header-cell"><span class="header-cell-label">Suite No.</span></div>
-                  <div style="font-size: 12px;">${getRoomLabel(rooms, Number(payload.roomNumber))}</div>
-                </div>
-                <div>
-                  <div class="header-cell"><span class="header-cell-label">Guest</span></div>
-                  <div style="font-size: 12px;">${payload.guestName}</div>
-                </div>
-              </div>
-            </div>
+          ${billHTML}
 
-            <div class="food-bill-title">FOOD BILL</div>
-
-            <div class="table-container">
-              <table>
-                <thead>
-                  <tr>
-                    <th style="width: 15%;">Dates</th>
-                    <th style="width: 35%;">Summary of Services</th>
-                    <th style="width: 15%;">Rate</th>
-                    <th style="width: 35%;">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${itemRows.join('')}
-                </tbody>
-              </table>
-            </div>
-
-            <div class="summary-section">
-              <div class="summary-row">
-                <div class="summary-label">Subtotal</div>
-                <div class="summary-amount">₹ ${subtotal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div>
-              </div>
-              <div class="summary-row grand-total">
-                <div class="summary-label">TOTAL</div>
-                <div class="summary-amount">₹ ${grandTotal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div>
-              </div>
-            </div>
-
-            <div class="footer-section">
-              <div class="footer-cell">
-                <div class="footer-label">PAN No:</div>
-                <div>ONRPS6145C</div>
-              </div>
-              <div class="footer-cell">
-                <div class="footer-label">Payment Method</div>
-              </div>
-            </div>
-
-            <div class="signature-area">
-              <div class="footer-label">For TVUM Suites</div>
-              <div style="margin-top: 40px;">Signature</div>
-            </div>
-
-            <div class="jurisdiction">
-              SUBJECT TO PUNE JURISDICTION
-            </div>
+          <div class="separator">
+            <div class="separator-line"></div>
+            <div class="separator-label">✂ &nbsp; CUSTOMER COPY &nbsp; ✂</div>
+            <div class="separator-line"></div>
           </div>
+
+          ${billHTML}
         </body>
       </html>
     `);
 
     printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-  };
 
+    const applyScaleAndPrint = () => {
+      window.setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+      }, 250);
+    };
+
+    const logo = printWindow.document.querySelector('img[data-print-logo="true"]') as HTMLImageElement | null;
+    if (!logo) { applyScaleAndPrint(); return; }
+    if (logo.complete && logo.naturalWidth > 0) { applyScaleAndPrint(); return; }
+    logo.onload = applyScaleAndPrint;
+    logo.onerror = applyScaleAndPrint;
+  };
   const Counter = ({
     label,
     icon: Icon,
@@ -986,7 +1007,7 @@ const FoodPage = () => {
     setOrderDate(getTodayDateString());
 
     toast.success('Food count saved and ready to print', {
-      description: `${selectedBooking.guestName} • ${currency.format(totalAmount)} bill saved to Saved Bills`,
+      description: `${selectedBooking.guestName} ₹ ${currency.format(totalAmount)} bill saved to Saved Bills`,
     });
   };
 
