@@ -110,7 +110,7 @@ function parseICalDate(dateString: string): Date | null {
 export async function fetchAirbnbCalendar(icalUrl: string): Promise<AirbnbEvent[]> {
   try {
     // Use backend proxy to avoid CORS issues
-    const proxyUrl = `http://localhost:3001/api/airbnb/ical?url=${encodeURIComponent(icalUrl)}`;
+    const proxyUrl = `/api/airbnb/ical?url=${encodeURIComponent(icalUrl)}`;
     
     const response = await fetch(proxyUrl);
     if (!response.ok) {
