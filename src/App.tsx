@@ -5,9 +5,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppProvider, useApp } from "@/context/AppContext";
 import { canAccessPage, type AppRole, type PageRoute } from "@/lib/permissions";
+import { useAirbnbSync } from "@/hooks/use-airbnb-sync";
+import { useEffect, useRef } from "react";
 import LoginPage from "./pages/LoginPage";
 import BookingPage from "./pages/BookingPage";
 import DashboardPage from "./pages/DashboardPage";
+import CalendarPage from "./pages/CalendarPage";
 import FoodPage from "./pages/FoodPage";
 import RoomsPage from "./pages/RoomsPage";
 import GuestInfoPage from "./pages/GuestInfoPage";
@@ -26,6 +29,7 @@ const getAllowedPageForRole = (role: AppRole | null): PageRoute | null => {
 
   if (canAccessPage(role, '/')) return '/';
   if (canAccessPage(role, '/dashboard')) return '/dashboard';
+  if (canAccessPage(role, '/calendar')) return '/calendar';
   if (canAccessPage(role, '/food')) return '/food';
   if (canAccessPage(role, '/rooms')) return '/rooms';
   if (canAccessPage(role, '/inventory')) return '/inventory';
@@ -62,6 +66,17 @@ const ProtectedRoute = ({ page, element }: { page: PageRoute; element: JSX.Eleme
 
 const AuthenticatedApp = () => {
   const { isAuthenticated, authLoading } = useApp();
+  const { autoSync } = useAirbnbSync();
+  const hasInitialSynced = useRef(false);
+
+  // Auto-sync Airbnb bookings when app loads (only once)
+  useEffect(() => {
+    if (isAuthenticated && !authLoading && !hasInitialSynced.current) {
+      hasInitialSynced.current = true;
+      console.log('🔄 Starting initial Airbnb sync...');
+      autoSync(true); // Silent sync (no notifications)
+    }
+  }, [isAuthenticated, authLoading, autoSync]);
 
   if (authLoading) return <div className="min-h-screen flex items-center justify-center"><p className="text-muted-foreground">Loading...</p></div>;
 
@@ -74,6 +89,7 @@ const AuthenticatedApp = () => {
       <Routes>
         <Route path="/" element={<ProtectedRoute page="/" element={<BookingPage />} />} />
         <Route path="/dashboard" element={<ProtectedRoute page="/dashboard" element={<DashboardPage />} />} />
+        <Route path="/calendar" element={<ProtectedRoute page="/calendar" element={<CalendarPage />} />} />
         <Route path="/food" element={<ProtectedRoute page="/food" element={<FoodPage />} />} />
         <Route path="/guests" element={<ProtectedRoute page="/guests" element={<GuestInfoPage />} />} />
         <Route path="/rooms" element={<ProtectedRoute page="/rooms" element={<RoomsPage />} />} />

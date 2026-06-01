@@ -1,0 +1,7 @@
+# Wrangler config - deprecated (using Contabo instead)
+# This file is kept for reference only
+# Project deployment has moved to Contabo with PM2/Nginx
+
+name = "tvum-suites-calendar"
+main = "worker/index.mjs"
+compatibility_date = "2026-06-01"

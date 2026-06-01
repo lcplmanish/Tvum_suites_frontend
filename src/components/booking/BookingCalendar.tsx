@@ -1,10 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { useApp, Booking } from '@/context/AppContext';
+import { useAirbnbSync } from '@/hooks/use-airbnb-sync';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths, isSameDay, startOfDay } from 'date-fns';
-import { ChevronLeft, ChevronRight, X, Users, CalendarIcon, Phone } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Users, CalendarIcon, Phone, Cloud } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { getRoomLabel } from '@/lib/utils';
+import { AirbnbSyncDialog } from '@/components/booking/AirbnbSyncDialog';
 
 const ROOM_COLORS: Record<number, { bg: string; text: string; dot: string; label: string }> = {
   1: { bg: 'bg-green-100', text: 'text-green-800', dot: 'bg-green-500', label: 'Green' },
@@ -17,8 +19,14 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const BookingCalendar: React.FC = () => {
   const { bookings, rooms } = useApp();
+  const { loading, lastSyncTime } = useAirbnbSync();
+
+  // Auto-sync is now handled globally in App.tsx on initial login
+  // No need to sync on component mount
+
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [syncDialogOpen, setSyncDialogOpen] = useState(false);
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -48,8 +56,25 @@ const BookingCalendar: React.FC = () => {
     <div className="bg-card rounded-xl border border-border p-4 md:p-6" style={{ boxShadow: 'var(--shadow-card)' }}>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-serif font-medium text-foreground">Booking Calendar</h2>
+        <div>
+          <h2 className="text-lg font-serif font-medium text-foreground">Booking Calendar</h2>
+          {lastSyncTime && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Last synced: {new Date(lastSyncTime).toLocaleTimeString('en-IN')}
+            </p>
+          )}
+        </div>
         <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setSyncDialogOpen(true)}
+            disabled={loading}
+            className="gap-2"
+          >
+            <Cloud className="w-4 h-4" />
+            {loading ? 'Syncing...' : 'Sync Airbnb'}
+          </Button>
           <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
             <ChevronLeft className="w-4 h-4" />
           </Button>
@@ -208,6 +233,9 @@ const BookingCalendar: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Airbnb Sync Dialog */}
+      <AirbnbSyncDialog open={syncDialogOpen} onOpenChange={setSyncDialogOpen} />
     </div>
   );
 };

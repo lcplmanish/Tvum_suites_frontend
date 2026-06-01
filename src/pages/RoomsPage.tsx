@@ -5,6 +5,7 @@ import {
 import { useApp, Room } from '@/context/AppContext';
 import { Button } from '@/components/ui/button';
 import EditRoomDialog from '@/components/rooms/EditRoomDialog';
+import RoomCalendarExport from '@/components/rooms/RoomCalendarExport';
 
 const amenities = [
   { icon: Bed, label: '1 Double Bed' },
@@ -40,6 +41,7 @@ const RoomsPage = () => {
                 <h3 className="text-xl font-serif font-semibold text-foreground">{room.name}</h3>
                 <div className="flex items-center gap-2">
                   {/* <span className="text-lg font-bold text-primary">₹{room.price}<span className="text-xs text-muted-foreground font-normal">/night</span></span> */}
+                  <RoomCalendarExport room={room} />
                   {userRole === 'owner' && (
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditRoom(room)}>
                       <Pencil className="w-4 h-4" />

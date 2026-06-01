@@ -70,9 +70,9 @@ const FoodPage = () => {
   const [lunchCount, setLunchCount] = useState(0);
   const [teaCoffeeCount, setTeaCoffeeCount] = useState(0);
   const [orderDate, setOrderDate] = useState(getTodayDateString());
-  const [breakfastPrice, setBreakfastPrice] = useState(foodPricing.breakfastPrice);
-  const [lunchPrice, setLunchPrice] = useState(foodPricing.lunchPrice);
-  const [teaCoffeePrice, setTeaCoffeePrice] = useState(foodPricing.teaCoffeePrice);
+  const [breakfastPrice, setBreakfastPrice] = useState(foodPricing?.breakfastPrice ?? 0);
+  const [lunchPrice, setLunchPrice] = useState(foodPricing?.lunchPrice ?? 0);
+  const [teaCoffeePrice, setTeaCoffeePrice] = useState(foodPricing?.teaCoffeePrice ?? 0);
   const [previewGuestKey, setPreviewGuestKey] = useState<string | null>(null);
   const [isGstEnabled, setIsGstEnabled] = useState(true);
   const [isDiscountEnabled, setIsDiscountEnabled] = useState(false);
@@ -102,9 +102,9 @@ const FoodPage = () => {
   }, []);
 
   useEffect(() => {
-    setBreakfastPrice(foodPricing.breakfastPrice);
-    setLunchPrice(foodPricing.lunchPrice);
-    setTeaCoffeePrice(foodPricing.teaCoffeePrice);
+    setBreakfastPrice(foodPricing?.breakfastPrice ?? 0);
+    setLunchPrice(foodPricing?.lunchPrice ?? 0);
+    setTeaCoffeePrice(foodPricing?.teaCoffeePrice ?? 0);
   }, [foodPricing]);
 
   useEffect(() => {
@@ -1065,7 +1065,7 @@ const printSavedBill = (payload: {
 
               <div className="space-y-2">
                 <Label className="text-xs uppercase tracking-wider text-muted-foreground">Order date</Label>
-                <Input type="date" value={orderDate} onChange={e => setOrderDate(e.target.value || getTodayDateString())} />
+                <Input type="date" value={orderDate || getTodayDateString()} onChange={e => setOrderDate(e.target.value || getTodayDateString())} />
               </div>
             </CardHeader>
             <CardContent className="space-y-4">

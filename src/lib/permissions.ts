@@ -6,6 +6,7 @@ export type Feature =
   | 'create_booking'
   | 'edit_booking'
   | 'delete_booking'
+  | 'view_calendar'
   | 'view_food'
   | 'edit_food_prices'
   | 'view_guests'
@@ -20,7 +21,7 @@ export type Feature =
   | 'delete_staff'
   | 'manage_roles';
 
-export type PageRoute = '/' | '/dashboard' | '/food' | '/guests' | '/rooms' | '/inventory' | '/staff' | '/laundry' | '/ai';
+export type PageRoute = '/' | '/dashboard' | '/calendar' | '/food' | '/guests' | '/rooms' | '/inventory' | '/staff' | '/laundry' | '/ai';
 
 const fullAccessRoles: AppRole[] = ['owner', 'admin', 'main_supervisor'];
 
@@ -43,6 +44,7 @@ const permissions: Record<Feature, AppRole[]> = {
   create_booking:  [...fullAccessRoles, 'supervisor'],
   edit_booking:    [...fullAccessRoles],
   delete_booking:  [...fullAccessRoles],
+  view_calendar:   [...fullAccessRoles, 'supervisor'],
   view_food:       [...fullAccessRoles, 'supervisor', 'accountant', 'staff'],
   edit_food_prices:[...fullAccessRoles],
   view_guests:     [...fullAccessRoles],
@@ -61,6 +63,7 @@ const permissions: Record<Feature, AppRole[]> = {
 const pageAccess: Record<PageRoute, AppRole[]> = {
   '/': [...fullAccessRoles, 'supervisor'],
   '/dashboard': [...fullAccessRoles, 'accountant'],
+  '/calendar': [...fullAccessRoles, 'supervisor'],
   '/food': [...fullAccessRoles, 'supervisor', 'accountant', 'staff'],
   '/guests': [...fullAccessRoles],
   '/rooms': [...fullAccessRoles, 'supervisor'],

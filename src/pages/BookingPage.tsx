@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
+import { useAirbnbSync } from '@/hooks/use-airbnb-sync';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,7 +8,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { format, isWithinInterval, isBefore, startOfDay } from 'date-fns';
-
+// autosync import removed; autoSync is called globally from App.tsx
 const INDIA_TIME_ZONE = 'Asia/Kolkata';
 const TIME_SLOTS = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`);
 
@@ -59,6 +60,10 @@ const ID_PROOF_BUCKET = 'guest-id-proofs';
 
 const BookingPage = () => {
   const { bookings, addBooking, rooms } = useApp();
+
+  // Auto-sync is now handled globally in App.tsx
+  // No need to sync again on page load
+
   const [selectedRoom, setSelectedRoom] = useState<number | null>(null);
   const [checkIn, setCheckIn] = useState<Date | undefined>();
   const [checkOut, setCheckOut] = useState<Date | undefined>();
@@ -205,11 +210,15 @@ const BookingPage = () => {
         pets,
         breakfastCount: 0,
         lunchCount: 0,
+        teaCoffeeCount: 0,
         guests,
         bookingSource: bookingSourceValue,
       });
 
       toast.success('Booking confirmed!', { description: `${guests[0].name} • Room ${selectedRoom}` });
+
+      // Airbnb auto-sync is handled globally in App.tsx; no per-page call needed
+
       // Reset
       setSelectedRoom(null);
       setCheckIn(undefined);

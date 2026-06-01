@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/sidebar';
 import {
   CalendarPlus,
+  Calendar,
   LayoutDashboard,
   BedDouble,
   Package,
@@ -35,6 +36,7 @@ import logoImage from '@/assets/image.png';
 const navItems = [
   { title: 'New Booking', url: '/', icon: CalendarPlus, feature: 'create_booking' as Feature },
   { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard, feature: 'view_dashboard' as Feature },
+  { title: 'Calendar', url: '/calendar', icon: Calendar, feature: 'view_rooms' as Feature },
   { title: 'Food', url: '/food', icon: UtensilsCrossed, feature: 'view_food' as Feature },
   { title: 'Guest Info', url: '/guests', icon: Contact, feature: 'view_guests' as Feature },
   { title: 'Rooms', url: '/rooms', icon: BedDouble, feature: 'view_rooms' as Feature },
